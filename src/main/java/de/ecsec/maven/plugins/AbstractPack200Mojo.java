@@ -216,7 +216,10 @@ public abstract class AbstractPack200Mojo extends AbstractMojo {
 
 	if (includeClassifiers != null) {
 	    for (Artifact attachedArtifact : project.getAttachedArtifacts()) {
-		if ("jar".equals(attachedArtifact.getType()) && attachedArtifact.hasClassifier()
+		getLog().debug(attachedArtifact.getClassifier());
+		getLog().debug(attachedArtifact.getType());
+		if (("jar".equals(attachedArtifact.getType()) || "signed-packed-jar".equals(attachedArtifact.getType()))
+			&& attachedArtifact.hasClassifier()
 			&& includeClassifiers.contains(attachedArtifact.getClassifier())) {
 		    getLog().debug("packing " + attachedArtifact.getFile().getAbsolutePath());
 		    artifacts.add(attachedArtifact);
