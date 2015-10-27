@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (C) 2013 ecsec GmbH.
+ * Copyright (C) 2013-2015 ecsec GmbH.
  * All rights reserved.
  * Contact: ecsec GmbH (info@ecsec.de)
  *
@@ -45,7 +45,8 @@ import org.apache.maven.project.MavenProject;
 
 
 /**
- * @author Benedikt Biallowons <benedikt.biallowons@ecsec.de>
+ *
+ * @author Benedikt Biallowons
  */
 public abstract class AbstractPack200Mojo extends AbstractMojo {
 
@@ -55,7 +56,7 @@ public abstract class AbstractPack200Mojo extends AbstractMojo {
     protected static final String PACK200_FILE_ENDING = ".pack";
     protected static final String PACK200_TYPE = "jar.pack";
 
-    protected static final ArrayList<String> DEBUG_ATTRIBUTES = new ArrayList<String>();
+    protected static final ArrayList<String> DEBUG_ATTRIBUTES = new ArrayList<>();
 
     protected Packer packer;
     protected Unpacker unpacker;
@@ -128,11 +129,11 @@ public abstract class AbstractPack200Mojo extends AbstractMojo {
     }
 
     protected Packer getPacker() {
-	Packer packer = Pack200.newPacker();
+	Packer p = Pack200.newPacker();
 
 	getLog().debug("configuring packer");
 
-	Map<String, String> packerProps = packer.properties();
+	Map<String, String> packerProps = p.properties();
 
 	getLog().debug("setting effort to " + String.valueOf(effort));
 	packerProps.put(Packer.EFFORT, String.valueOf(effort));
@@ -201,17 +202,17 @@ public abstract class AbstractPack200Mojo extends AbstractMojo {
 
 	getLog().debug("finished configuring packer");
 
-	return packer;
+	return p;
     }
 
     protected List<Artifact> getArtifacts() {
-	List<Artifact> artifacts = new ArrayList<Artifact>();
+	List<Artifact> artifactList = new ArrayList<>();
 
 	getLog().debug("configuring artifacts to pack");
 
 	if (processMainArtifact) {
 	    getLog().debug("packing " + project.getArtifact().getFile().getAbsolutePath());
-	    artifacts.add(project.getArtifact());
+	    artifactList.add(project.getArtifact());
 	}
 
 	if (includeClassifiers != null) {
@@ -222,19 +223,19 @@ public abstract class AbstractPack200Mojo extends AbstractMojo {
 			&& attachedArtifact.hasClassifier()
 			&& includeClassifiers.contains(attachedArtifact.getClassifier())) {
 		    getLog().debug("packing " + attachedArtifact.getFile().getAbsolutePath());
-		    artifacts.add(attachedArtifact);
+		    artifactList.add(attachedArtifact);
 		}
 	    }
 	}
 
 	getLog().debug("finished configuring artifacts to pack");
 
-	return artifacts;
+	return artifactList;
     }
 
     protected void setPackLoggingLevel() throws MojoExecutionException {
 	Level logLevel = null;
-	String loggingPropertiesFile = null;
+	String loggingPropertiesFile;
 
 	try {
 	    logLevel = Level.parse(packLogLevel.toUpperCase());
@@ -253,17 +254,19 @@ public abstract class AbstractPack200Mojo extends AbstractMojo {
 	}
 
 	try {
-	    FileInputStream fis = new FileInputStream(loggingPropertiesFile);
-	    Properties properties = new Properties();
-	    properties.load(fis);
-	    fis.close();
+	    Properties properties;
+	    try (FileInputStream fis = new FileInputStream(loggingPropertiesFile)) {
+		properties = new Properties();
+		properties.load(fis);
+	    }
 
 	    properties.put(PACK200_LOGGER_LEVEL_PROPERTY, logLevel.toString());
 
-	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	    properties.store(bos, null);
-	    ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-	    bos.close();
+	    ByteArrayInputStream bis;
+	    try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+		properties.store(bos, null);
+		bis = new ByteArrayInputStream(bos.toByteArray());
+	    }
 
 	    LogManager.getLogManager().readConfiguration(bis);
 	    bis.close();

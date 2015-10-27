@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (C) 2013 ecsec GmbH.
+ * Copyright (C) 2013-2015 ecsec GmbH.
  * All rights reserved.
  * Contact: ecsec GmbH (info@ecsec.de)
  *
@@ -41,7 +41,7 @@ import org.codehaus.plexus.util.IOUtil;
 /**
  * Goal capable of compressing a JAR with the pack200 tool.
  *
- * @author Benedikt Biallowons <benedikt.biallowons@ecsec.de>
+ * @author Benedikt Biallowons
  */
 @Mojo(name = "pack", defaultPhase = LifecyclePhase.PACKAGE, threadSafe = true)
 public class PackMojo extends AbstractPack200Mojo {
@@ -58,31 +58,30 @@ public class PackMojo extends AbstractPack200Mojo {
 
 	init();
 
-	getLog().info("packing " + artifacts.size() + " artifact" + (artifacts.size() == 0 || artifacts.size() > 1 ? "s" : ""));
+	int numArtifacts = artifacts.size();
+	getLog().info("packing " + numArtifacts + " artifact" + (numArtifacts == 0 || numArtifacts > 1 ? "s" : ""));
 
 	for (Artifact artifactToPack : artifacts) {
-	    List<Artifact> artifacts = new ArrayList<Artifact>();
-	    Artifact artifact = null;
+	    List<Artifact> artifactList = new ArrayList<>();
+	    Artifact artifact;
 	    File origFile = artifactToPack.getFile();
 	    File packFile = new File(origFile.getAbsolutePath() + PACK200_FILE_ENDING);
 
 	    try {
 		JarFile jar = new JarFile(origFile);
-		FileOutputStream fos = new FileOutputStream(packFile);
-
-		getLog().debug("packing " + origFile + " to " + packFile);
-		packer.pack(jar, fos);
-		fos.close();
+		try (FileOutputStream fos = new FileOutputStream(packFile)) {
+		    getLog().debug("packing " + origFile + " to " + packFile);
+		    packer.pack(jar, fos);
+		}
 
 		if (packAndGzip) {
 		    File packGzipFile = new File(origFile.getAbsolutePath() + PACK200_GZIP_FILE_ENDING);
-		    FileInputStream fis = new FileInputStream(packFile);
-
-		    getLog().debug("compressing " + packFile + " to " + packGzipFile);
-		    GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(packGzipFile));
-		    IOUtil.copy(fis, gzipOutputStream);
-		    gzipOutputStream.close();
-		    fis.close();
+		    try (FileInputStream fis = new FileInputStream(packFile)) {
+			try (GZIPOutputStream gzipOut = new GZIPOutputStream(new FileOutputStream(packGzipFile))) {
+			    getLog().debug("compressing " + packFile + " to " + packGzipFile);
+			    IOUtil.copy(fis, gzipOut);
+			}
+		    }
 
 		    getLog().debug("removing " + packFile);
 		    packFile.delete();
@@ -100,9 +99,9 @@ public class PackMojo extends AbstractPack200Mojo {
 		    artifact.setFile(packFile);
 		}
 
-		artifacts.add(artifact);
+		artifactList.add(artifact);
 
-		for (Artifact artifactToAttach : artifacts) {
+		for (Artifact artifactToAttach : artifactList) {
 		    getLog().debug("attaching " + artifactToAttach);
 		    project.addAttachedArtifact(artifactToAttach);
 		}
@@ -113,4 +112,5 @@ public class PackMojo extends AbstractPack200Mojo {
 	    }
 	}
     }
+
 }

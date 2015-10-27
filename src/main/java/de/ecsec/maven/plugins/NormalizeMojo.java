@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (C) 2013 ecsec GmbH.
+ * Copyright (C) 2013-2015 ecsec GmbH.
  * All rights reserved.
  * Contact: ecsec GmbH (info@ecsec.de)
  *
@@ -34,7 +34,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 /**
  * Goal capable of normalizing a JAR with the pack200 tool.
  *
- * @author Benedikt Biallowons <benedikt.biallowons@ecsec.de>
+ * @author Benedikt Biallowons
  */
 @Mojo(name = "normalize", defaultPhase = LifecyclePhase.PACKAGE, threadSafe = true)
 public class NormalizeMojo extends AbstractPack200Mojo {
@@ -45,7 +45,8 @@ public class NormalizeMojo extends AbstractPack200Mojo {
 
 	init();
 
-	getLog().info("normalizing " + artifacts.size() + " artifact" + (artifacts.size() == 0 || artifacts.size() > 1? "s" : ""));
+	int numArtifacts = artifacts.size();
+	getLog().info("normalizing " + numArtifacts + " artifact" + (numArtifacts == 0 || numArtifacts > 1 ? "s" : ""));
 
 	for (Artifact artifact : artifacts) {
 	    File origFile = artifact.getFile();
@@ -53,17 +54,15 @@ public class NormalizeMojo extends AbstractPack200Mojo {
 
 	    try {
 		JarFile jar = new JarFile(origFile);
-		FileOutputStream fos = new FileOutputStream(packFile);
+		try (FileOutputStream fos = new FileOutputStream(packFile)) {
+		    getLog().debug("packing " + origFile + " to " + packFile);
+		    packer.pack(jar, fos);
+		}
 
-		getLog().debug("packing " + origFile + " to " + packFile);
-		packer.pack(jar, fos);
-		fos.close();
-
-		getLog().debug("unpacking " + packFile + " to " + origFile);
-		JarOutputStream origJarStream = new JarOutputStream(new FileOutputStream(origFile));
-		unpacker.unpack(packFile, origJarStream);
-
-		origJarStream.close();
+		try (JarOutputStream origJarStream = new JarOutputStream(new FileOutputStream(origFile))) {
+		    getLog().debug("unpacking " + packFile + " to " + origFile);
+		    unpacker.unpack(packFile, origJarStream);
+		}
 
 		getLog().debug("removing " + packFile);
 		packFile.delete();

@@ -23,10 +23,10 @@
 		    <test>org.apache.maven.plugins:maven-surefire-plugin:test</test>
 		    <package>org.apache.maven.plugins:maven-jar-plugin:jar,
 			org.apache.maven.plugins:maven-shade-plugin:shade,
-			de.ecsec.maven.plugins:pack200-maven-plugin:normalize,
+			org.openecard.tools:pack200-maven-plugin:normalize,
 			org.apache.maven.plugins:maven-jarsigner-plugin:sign,
 			org.apache.maven.plugins:maven-jarsigner-plugin:verify,
-			de.ecsec.maven.plugins:pack200-maven-plugin:pack</package>
+			org.openecard.tools:pack200-maven-plugin:pack</package>
 		    <install>org.apache.maven.plugins:maven-install-plugin:install</install>
 		    <deploy>org.apache.maven.plugins:maven-deploy-plugin:deploy</deploy>
 		</phases>
